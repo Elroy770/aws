@@ -1,74 +1,603 @@
+---
+lesson: 09
+title: VPC Fundamentals
+domain: Design Secure Architectures
+services: [VPC, Subnets, Internet Gateway, Route Tables, EC2]
+tags: [saa-c03, networking, vpc, cidr, foundations]
+---
+
 # 09 — VPC Fundamentals
 
-## 1. מה זה?
+> [!abstract] בשורה אחת
+> VPC הוא רשת פרטית משלכם ב-Region — ובמבחן כמעט כל שאלת רשת נפתרת בשאלה אחת: *מה כתוב ב-Route Table?*
 
-VPC הוא virtual network מבודד ברמת Region. הוא מגדיר CIDR, subnets, route tables, gateways/endpoints ובקרות traffic. VPC אינו “שרת” ואינו מקבל public access בלי רכיבים ו-routes מפורשים.
+## 🗺️ מפת השיעור
 
-## 2. למה צריך את זה?
+| # | תחנה | מה תדע בסוף |
+|---|---|---|
+| 1 | הבעיה והפתרון | למה AWS לא סתם נותנת לכם שרתים על האינטרנט |
+| 2 | איך זה עובד | CIDR, Public/Private IP, VPC, Subnets, IGW, Route Tables |
+| 3 | פירוק מפורט | **טבלת subnetting**, 5 הכתובות השמורות, מגבלות, IPv6 |
+| 4 | עלות | מה חינם ומה בתשלום ב-VPC |
+| 5 | השוואות | Public מול Private subnet, VPC מול Subnet מול Route Table |
+| 6 | Well-Architected | תכנון רשת לפי ששת ה-Pillars |
+| 7 | מלכודות | "public subnet" הוא לא checkbox |
+| 8 | Scenario | תכנון VPC תלת-שכבתי מלא עם חלוקת CIDR |
 
-VPC נותן שליטה על address space, בידוד, reachability וארכיטקטורת tiers: ingress, application ו-database. הוא מאפשר לחבר workloads ל-internet, ל-AWS services ול-on-premises בצורה מבוקרת.
+**מונחי מפתח בשיעור:** `CIDR` · `Subnet Mask` · `Availability Zone` · `Internet Gateway` · `Route Table` · `local route` · `Dual-Stack`
 
-## 3. איך זה עובד?
+---
 
-VPC מקבל IPv4 CIDR (ואפשר IPv6). Subnet הוא טווח כתובות בתוך VPC ושייך ל-AZ יחיד; מחלקים workloads בין AZs לצורך availability. כל subnet משויך route table אחת, עם `local` route ל-VPC. אם subnet route table מפנה `0.0.0.0/0` ל-Internet Gateway ויש למשאב public IPv4/EIP, הוא יכול להיות public. שם כמו “private-subnet” אינו משנה reachability.
+## 1. 🎯 הבעיה והפתרון
 
-NAT Gateway, endpoints, peering ו-TGW הם רכיבים נפרדים. Security Group ו-NACL מחליטים אם traffic מותר לאחר שה-route קיים. IP ציבורי לבדו אינו מספיק ללא route ל-IGW, ו-route אינו עוקף security controls.
+### הבעיה בעולם האמיתי
 
-## 4. הדברים שחייבים לדעת למבחן
+- אם כל השרתים של כל הלקוחות ישבו על אותה רשת שטוחה — אין בידוד ואין אבטחה.
+- צריך לשלוט **מי מדבר עם מי**: web יכול לדבר עם app, app עם DB, אבל לא הפוך ולא מבחוץ.
+- כדי להתחבר ל-Data Center הארגוני צריך טווח כתובות שלא מתנגש עם הרשת הקיימת.
+- שרת שנחשף לאינטרנט בטעות הוא אחת מטעויות האבטחה הנפוצות בענן.
 
-- VPC הוא regional; subnet ו-NAT Gateway הם AZ-scoped.
-- Subnet אינו חוצה AZ; בנה לפחות subnet מקביל בכל AZ ל-HA.
-- Route table קובע next hop; longest-prefix match מנצח.
-- `local` route מאפשר traffic בתוך VPC; אין transitive routing אוטומטי.
-- Public subnet = IGW route + resource עם public address + rules מתאימים.
-- כתובות מסוימות בכל subnet שמורות AWS, לכן תכנן CIDR עם מרווח.
-- CIDR של VPCs שעתידים להתחבר אסור שיחפוף.
+### מה השירות פותר
 
-## 5. עלויות ותכנון חסכוני
+- **בידוד לוגי** — רשת וירטואלית פרטית משלכם בתוך AWS.
+- **שליטה על מרחב הכתובות** — אתם בוחרים את ה-CIDR, ואתם אחראים שלא יתנגש.
+- **חלוקה לשכבות** — public לכניסה, private לאפליקציה, private נוסף ל-DB.
+- **שליטה ב-reachability** — Route Tables קובעות לאן חבילה יכולה ללכת בכלל.
+- **בסיס לחיבוריות** — כל מה שנלמד בשיעורים 10–13 (NAT, Endpoints, Peering, VPN, DX) מתחבר כאן.
 
-VPC, route tables, subnets ו-IGW אינם מחויבים בפני עצמם. העלות נוצרת מהרכיבים וה-traffic: NAT Gateway לפי שעה ו-GB processed, interface endpoints לפי שעה לכל AZ/ENI ו-data processed, Transit Gateway לפי attachments/GB, public IPv4 לפי התמחור העדכני, ו-data transfer בין AZs/Regions או החוצה.
+> [!tip] האנלוגיה
+> ה-VPC הוא בניין משרדים ששכרתם. ה-Subnets הם קומות (כל קומה בבניין אחר = AZ אחרת).
+> ה-Route Table היא שילוט הכיוונים, וה-Internet Gateway היא דלת הכניסה הראשית מהרחוב.
+> **בלי שילוט שמפנה לדלת — הדלת לא עוזרת לאף אחד.**
 
-| בחירה | trade-off עלות |
+---
+
+## 2. ⚙️ איך זה עובד
+
+### 2.1 CIDR — הבסיס לכל דבר ברשת
+
+**CIDR** = Classless Inter-Domain Routing. שיטה לתאר **טווח** של כתובות IP.
+
+מבנה: `Base IP / Subnet Mask`
+
+- **Base IP** — הכתובת שממנה הטווח מתחיל, למשל `10.0.0.0`.
+- **Subnet Mask** — כמה ביטים **קבועים** וכמה **חופשיים להשתנות**.
+
+```text
+10 . 0 . 0 . 0 / 16
+└──────┬─────┘  └┬┘
+   Base IP    כמה ביטים קבועים (מתוך 32)
+```
+
+**כלל הזהב:** מספר הכתובות = `2 ^ (32 − mask)`.
+
+| Mask | צורה מלאה | כמה ביטים חופשיים | כמה כתובות |
+|---|---|---|---|
+| `/32` | 255.255.255.255 | 0 | **1** (כתובת בודדת) |
+| `/28` | 255.255.255.240 | 4 | 16 |
+| `/26` | 255.255.255.192 | 6 | 64 |
+| `/24` | 255.255.255.0 | 8 | 256 |
+| `/16` | 255.255.0.0 | 16 | 65,536 |
+| `/8` | 255.0.0.0 | 24 | 16,777,216 |
+| `/0` | 0.0.0.0 | 32 | **כל האינטרנט** |
+
+**קיצור זיכרון לפי אוקטטים:**
+
+- `/32` — אף אוקטט לא משתנה → IP אחד.
+- `/24` — האוקטט האחרון משתנה → 256.
+- `/16` — שני האחרונים משתנים → 65,536.
+- `/8` — שלושת האחרונים משתנים → ~16.7 מיליון.
+
+> [!tip] שני ה-CIDRs שתראו בכל בחינה
+> `0.0.0.0/0` = **כל כתובת IP** (משמש ב-route ל-IGW וב-SG "מכל מקום").
+> `x.x.x.x/32` = **כתובת בודדת אחת** (משמש להגבלה מדויקת ב-SG).
+
+### 2.2 Public מול Private IP
+
+ארגון **IANA** הגדיר טווחים שמורים לרשתות פרטיות. כל השאר — ציבורי.
+
+| טווח פרטי | CIDR | שימוש טיפוסי |
+|---|---|---|
+| 10.0.0.0 – 10.255.255.255 | `10.0.0.0/8` | רשתות ארגוניות גדולות |
+| 172.16.0.0 – 172.31.255.255 | `172.16.0.0/12` | **ה-Default VPC של AWS יושב כאן** |
+| 192.168.0.0 – 192.168.255.255 | `192.168.0.0/16` | רשתות ביתיות |
+
+- **ה-VPC שלכם חייב להיות באחד משלושת הטווחים האלה.** לא ניתן לבחור CIDR ציבורי.
+- כתובת פרטית אינה ניתנת לניתוב באינטרנט — ולכן צריך IGW/NAT כדי לצאת החוצה.
+
+### 2.3 VPC — הגבולות והמגבלות
+
+| מאפיין | ערך | הערה |
+|---|---|---|
+| **Scope** | **Region** | VPC לא חוצה Regions |
+| VPCs לכל Region | **5** | soft limit — ניתן להגדלה |
+| CIDR blocks לכל VPC | **עד 5** | אפשר להוסיף CIDR משני מאוחר יותר |
+| **גודל מינימלי** לכל CIDR | `/28` | 16 כתובות |
+| **גודל מקסימלי** לכל CIDR | `/16` | 65,536 כתובות |
+| טווחי כתובות מותרים | פרטיים בלבד | 10/8, 172.16/12, 192.168/16 |
+
+> [!warning] הכלל שקובע את גורל הארכיטקטורה
+> ה-CIDR של ה-VPC **לא יכול לחפוף** לרשתות שאיתן תתחברו — Data Center ארגוני,
+> VPC אחר ב-Peering, או VPC של שותף. חפיפה = **אי אפשר להתחבר לעולם**, וצריך לבנות מחדש.
+> תכננו את מרחב הכתובות **לפני** שמייצרים את ה-VPC הראשון.
+
+### 2.4 Default VPC
+
+- לכל חשבון AWS חדש יש **Default VPC** בכל Region.
+- EC2 שמשיקים בלי לציין subnet — נוחת שם.
+- ה-Default VPC **מחובר לאינטרנט**: יש בו IGW, route ל-`0.0.0.0/0`, וכל instance מקבל **IPv4 ציבורי**.
+- כל instance מקבל גם שם DNS ציבורי וגם פרטי.
+- ה-CIDR שלו הוא `172.31.0.0/16` עם subnet מסוג `/20` בכל AZ.
+- **למה זה חשוב:** ה-Default VPC מצוין ללימוד וגרוע לפרודקשן — הוא public by default.
+  בפרודקשן בונים VPC ייעודי עם שכבות מוגדרות.
+
+### 2.5 Subnets
+
+- Subnet הוא **תת-טווח** של ה-CIDR של ה-VPC.
+- **Subnet שייך ל-Availability Zone אחת בלבד** ולעולם לא חוצה AZ.
+- זו הסיבה שכל ארכיטקטורה עמידה דורשת **subnet מקביל בכל AZ**.
+
+```text
+Region: eu-west-1
+└── VPC  10.0.0.0/16
+    ├── AZ  eu-west-1a
+    │    ├── Public  Subnet   10.0.0.0/24
+    │    └── Private Subnet   10.0.10.0/24
+    └── AZ  eu-west-1b
+         ├── Public  Subnet   10.0.1.0/24
+         └── Private Subnet   10.0.11.0/24
+```
+
+### 2.6 Internet Gateway (IGW)
+
+- מאפשר למשאבים ב-VPC לתקשר עם האינטרנט.
+- **מתרחב אופקית, זמין מאוד ומיותר (redundant)** — AWS מנהלת אותו, אין מה לתחזק.
+- **חייבים ליצור אותו בנפרד** מה-VPC ואז לחבר (attach).
+- **יחס 1:1** — VPC אחד יכול להיות מחובר ל-IGW אחד בלבד, ולהפך.
+
+> [!warning] IGW לבדו לא נותן אינטרנט
+> זו אחת הנקודות שנשאלות הכי הרבה. חיבור IGW הוא **חצי** מהעבודה.
+> חייבים גם **לערוך את ה-Route Table** ולהוסיף `0.0.0.0/0 → igw-id`.
+
+### 2.7 Route Tables
+
+- כל subnet משויך ל-**Route Table אחת** (אם לא שייכתם — הוא יורש את ה-Main Route Table).
+- Route Table אחת יכולה לשרת **הרבה** subnets.
+- כל Route Table מכילה **route מובנה מסוג `local`** ל-CIDR של ה-VPC — זה מה שמאפשר לכל המשאבים
+  בתוך ה-VPC לדבר ביניהם. **את ה-route הזה אי אפשר למחוק.**
+
+| Destination | Target | משמעות |
+|---|---|---|
+| `10.0.0.0/16` | `local` | תעבורה פנימית ב-VPC (תמיד קיים) |
+| `0.0.0.0/0` | `igw-xxxx` | כל השאר → אינטרנט. **זה מה שהופך subnet ל-public** |
+| `0.0.0.0/0` | `nat-xxxx` | כל השאר → NAT (subnet פרטי עם יציאה החוצה) |
+| `172.16.0.0/12` | `pcx-xxxx` | ל-VPC אחר דרך Peering |
+
+**Longest Prefix Match** — כשיש כמה routes מתאימות, מנצחת זו עם ה-mask **הספציפית ביותר**:
+
+```text
+0.0.0.0/0      → igw     (כללי)
+10.1.0.0/16    → pcx     (ספציפי יותר)
+10.1.5.0/24    → tgw     (הכי ספציפי ← ינצח לתעבורה ל-10.1.5.x)
+```
+
+---
+
+## 3. 🔍 פירוק מפורט
+
+### 3.1 חמש הכתובות ש-AWS שומרת בכל Subnet
+
+**בכל subnet, AWS שומרת 5 כתובות: ארבע הראשונות והאחרונה.** אי אפשר להקצות אותן ל-EC2.
+
+דוגמה ל-subnet `10.0.0.0/24`:
+
+| כתובת | תפקיד |
 |---|---|
-| יותר AZs/subnets | יותר availability אך עלות רכיבים zonal ותפעול. |
-| NAT מרכזי ב-AZ אחד | זול יותר אך cross-AZ transfer ו-single-AZ failure; לא ברירת מחדל ל-HA. |
-| Gateway Endpoint ל-S3/DynamoDB | בדרך כלל זול יותר מ-NAT, ללא hourly endpoint charge. |
-| CIDR גדול ומתוכנן | כמעט ללא עלות ישירה, אך מונע migration/rework יקר ו-CIDR overlap. |
+| `10.0.0.0` | **Network Address** — כתובת הרשת עצמה |
+| `10.0.0.1` | שמורה ל-**VPC Router** |
+| `10.0.0.2` | שמורה ל-**Amazon DNS** (מיפוי DNS) |
+| `10.0.0.3` | שמורה **לשימוש עתידי** של AWS |
+| `10.0.0.255` | **Broadcast Address** — AWS לא תומכת ב-broadcast, אבל שומרת אותה |
 
-## 6. ההבדלים החשובים
+### 3.2 טבלת Subnetting — כמה IP באמת מקבלים
+
+| CIDR | סה"כ כתובות | פחות 5 שמורות | **זמינות בפועל** | שימוש טיפוסי |
+|---|---|---|---|---|
+| `/16` | 65,536 | −5 | **65,531** | גודל ה-VPC המקסימלי (לא subnet יחיד) |
+| `/20` | 4,096 | −5 | **4,091** | subnet גדול, ברירת המחדל של Default VPC |
+| `/22` | 1,024 | −5 | **1,019** | subnet לאפליקציה גדולה |
+| `/24` | 256 | −5 | **251** | ה-subnet הסטנדרטי והנוח ביותר |
+| `/26` | 64 | −5 | **59** | subnet ל-DB או שירות קטן |
+| `/27` | 32 | −5 | **27** | subnet קטן, זהירות |
+| `/28` | 16 | −5 | **11** | **המינימום ש-AWS מאפשרת** |
+| `/29` ומטה | — | — | **לא נתמך** | AWS דוחה |
+
+> [!warning] טיפ מבחן קלאסי — הספירה שמפילה אנשים
+> "צריך **29** כתובות IP ל-EC2 instances. איזה subnet לבחור?"
+> - `/27` = 32 כתובות → 32 − 5 = **27** → **לא מספיק!**
+> - `/26` = 64 כתובות → 64 − 5 = **59** → ✅ זו התשובה.
+>
+> **תמיד תחסירו 5 לפני שאתם משווים לדרישה.**
+
+### 3.3 תרגיל CIDR קצר
+
+פענחו כל שורה, ואז בדקו את עצמכם.
+
+| # | CIDR | כמה כתובות? | הטווח? |
+|---|---|---|---|
+| 1 | `192.168.0.0/24` | ? | ? |
+| 2 | `192.168.0.0/26` | ? | ? |
+| 3 | `10.0.0.0/16` | ? | ? |
+| 4 | `134.56.78.123/32` | ? | ? |
+| 5 | `0.0.0.0/0` | ? | ? |
+| 6 | `10.0.4.0/22` | ? | ? |
+
+<details>
+<summary>פתרונות</summary>
+
+1. `/24` → 2^(32−24) = **256** כתובות: `192.168.0.0` – `192.168.0.255`. זמינות ל-EC2: **251**.
+2. `/26` → 2^6 = **64** כתובות: `192.168.0.0` – `192.168.0.63`. זמינות: **59**.
+3. `/16` → 2^16 = **65,536** כתובות: `10.0.0.0` – `10.0.255.255`.
+4. `/32` → **כתובת אחת** בדיוק: `134.56.78.123`. זה מה שמשתמשים בו ב-SG להגבלה ל-IP יחיד.
+5. `/0` → **כל כתובת IP בעולם**: `0.0.0.0` – `255.255.255.255`.
+6. `/22` → 2^10 = **1,024** כתובות: `10.0.4.0` – `10.0.7.255`. זמינות: **1,019**.
+
+</details>
+
+**כלל אצבע לתכנון:** אל תקמצנו. `/24` לכל subnet הוא ברירת מחדל בטוחה,
+כי הוא נוח לקריאה (האוקטט השלישי הוא "מספר ה-subnet") ומשאיר מקום לצמיחה.
+
+### 3.4 מה הופך subnet ל-Public בפועל
+
+Public subnet **אינו** דגל שמסמנים. הוא תוצאה של שלושה תנאים ביחד:
+
+| # | תנאי | בלעדיו |
+|---|---|---|
+| 1 | **IGW מחובר ל-VPC** | אין שער לצאת דרכו |
+| 2 | **Route Table של ה-subnet מכילה `0.0.0.0/0 → igw`** | ה-instance לא יודע לאן ללכת |
+| 3 | **למשאב יש IPv4 ציבורי או Elastic IP** | אין כתובת שאפשר לחזור אליה |
+
+- בנוסף, SG ו-NACL חייבים לאפשר את התעבורה — ראו [[11 - VPC Security]].
+- **שם ה-subnet לא משנה כלום.** subnet בשם `private-subnet` עם route ל-IGW הוא public לכל דבר.
+
+### 3.5 IPv6 ב-VPC
+
+| עובדה | פירוט |
+|---|---|
+| למה בכלל | 4.3 מיליארד כתובות IPv4 עומדות להיגמר; IPv6 נותן ~3.4 × 10³⁸ |
+| פורמט | 8 קבוצות הקסדצימליות, למשל `2001:db8:3333:4444:5555:6666:7777:8888` |
+| קיצורים | `::` = כל השמינייה אפסים · `2001:db8::` = ששת האחרונים אפסים |
+| **כל IPv6 ב-AWS הוא ציבורי** | אין טווח פרטי ב-IPv6. כל כתובת ניתנת לניתוב באינטרנט |
+| **IPv4 לא ניתן לכיבוי** | ה-VPC וה-subnets תמיד יחזיקו IPv4 |
+| Dual-Stack | ה-instance מקבל IPv4 פרטי **וגם** IPv6 ציבורי, ויכול לתקשר בשניהם |
+| יציאה החוצה | IPv6 יוצא דרך IGW; ליציאה בלבד ללא כניסה — **Egress-Only IGW** |
+
+**IPv4 Troubleshooting — נקודה שנשאלת:**
+
+- אם לא מצליחים להשיק EC2 ב-subnet — הסיבה **אינה** מחסור ב-IPv6 (המרחב עצום).
+- הסיבה היא **שאין כתובת IPv4 פנויה** ב-subnet.
+- **הפתרון:** להוסיף CIDR של IPv4 נוסף ל-VPC ו-subnet חדש ממנו.
+
+**דוגמה ל-Route Table ב-Dual-Stack:**
+
+```text
+Public Subnet Route Table          Private Subnet Route Table
+──────────────────────────         ───────────────────────────
+10.0.0.0/16          → local       10.0.0.0/16          → local
+2001:db8:...::/56    → local       2001:db8:...::/56    → local
+0.0.0.0/0            → igw         0.0.0.0/0            → nat-gateway
+::/0                 → igw         ::/0                 → eigw  (Egress-Only)
+```
+
+- **`::/0`** הוא ה-"כל האינטרנט" של IPv6, המקבילה ל-`0.0.0.0/0`.
+- ה-**Egress-Only IGW** הוא ה-NAT Gateway של IPv6: מאפשר יציאה, חוסם כניסה יזומה.
+  פירוט ב-[[10 - VPC Internet Connectivity]].
+
+### 3.6 מפת רכיבי ה-VPC — מה שייך לאיזה Scope
 
 | רכיב | Scope | תפקיד |
 |---|---|---|
-| VPC | Region | גבול הרשת וה-address space |
-| Subnet | AZ | טווח IP ל-workloads |
-| Route table | VPC/subnet association | next hop ו-reachability |
-| Security Group | ENI/resource | stateful allow rules |
-| NACL | Subnet | stateless allow/deny guardrail |
+| **VPC** | Region | גבול הרשת ומרחב הכתובות |
+| **Subnet** | **AZ** | טווח IP שבו יושבים משאבים |
+| **Internet Gateway** | VPC (1:1) | גישה לאינטרנט ב-IPv4 ו-IPv6 |
+| **Route Table** | VPC, משויכת ל-subnets | קובעת next hop |
+| **NAT Gateway** | **AZ** | יציאה לאינטרנט מ-subnet פרטי (IPv4) |
+| **Security Group** | ENI / משאב | allow בלבד, **stateful** |
+| **NACL** | **Subnet** | allow + deny, **stateless** |
+| **VPC Endpoint** | VPC | גישה פרטית לשירותי AWS |
+| **VPC Peering** | בין VPCs | חיבור 1:1, **לא טרנזיטיבי** |
+| **Transit Gateway** | Region | hub לחיבור טרנזיטיבי של רבים |
 
-## 7. מלכודות במבחן
+זו מפת הדרכים לשיעורים [[10 - VPC Internet Connectivity]], [[11 - VPC Security]],
+[[12 - VPC Private Connectivity]] ו-[[13 - VPC Network Architecture]].
 
-- “Public subnet” אינו checkbox; בדוק route ל-IGW וגם public address.
-- private subnet עם public IP לא נהיה בטוח או private.
-- VPC הוא regional, אך subnet הוא AZ-specific; אל תציע subnet אחד ל-HA רב-AZ.
-- route תקין לא עוקף SG/NACL, ו-SG תקין לא יוצר route.
+---
 
-## 8. Scenario מהעולם האמיתי
+## 4. 💰 עלות ותמחור — על מה בדיוק משלמים
 
-בנה VPC עם `/16`, public subnets ל-ALB בשתי AZs, private application subnets בשתי AZs ו-private database subnets. Application מקבל outbound דרך NAT או endpoints, ו-RDS אינו מקבל public access. CIDR אינו חופף ל-on-premises כדי לאפשר TGW/DX בעתיד.
+### על מה מחייבים
 
-## 9. AWS Well-Architected — ששת ה-pillars
+| רכיב | חיוב | הערה |
+|---|---|---|
+| **VPC עצמו** | **0** | יצירת VPC היא חינם |
+| **Subnets** | **0** | כמה שרוצים |
+| **Route Tables** | **0** | |
+| **Internet Gateway** | **0** לרכיב | משלמים רק על ה-data transfer שעובר בו |
+| **Security Groups / NACLs** | **0** | |
+| **Public IPv4** | **בתשלום לשעה** | מאז 2024 כל IPv4 ציבורי מחויב, **גם אם בשימוש** |
+| **Elastic IP לא מחוברת** | בתשלום לשעה | EIP שלא מוצמדת למשאב פעיל מחויבת |
+| **NAT Gateway** | שעות + GB מעובד | ראו [[10 - VPC Internet Connectivity]] |
+| **Interface Endpoint** | שעות לכל AZ + GB | ראו [[12 - VPC Private Connectivity]] |
+| **Data Transfer** | GB לפי כיוון ומרחק | היעד העיקרי לאופטימיזציה |
+| **VPC Flow Logs** | אחסון ב-CloudWatch/S3 | הרישום עצמו חינם, האחסון לא |
 
-- **Operational Excellence:** IaC, tagging, diagrams, VPC Flow Logs ו-runbooks לבדיקת routes/SG/NACL.
-- **Security:** private-by-default tiers, least privilege, אין `0.0.0.0/0` ל-database, והפרדה לפי trust boundary.
-- **Reliability:** subnets ורכיבים בשתי AZs לפחות ופחות נקודות כשל יחידות.
-- **Performance Efficiency:** CIDR/subnet sizing נכון, הימנע מ-cross-AZ hops מיותרים, ובחר connectivity לפי latency/throughput.
-- **Cost Optimization:** gateway endpoints, NAT per-AZ לפי צורך, cleanup של EIP/endpoints וניתוח data transfer.
-- **Sustainability:** צמצם hops ו-NAT processing, השתמש ב-private service paths וב-resource sizing מתאים.
+### מה זול ומה יקר
 
-## 10. סיכום ובדיקת הבנה
+| חלופה | עלות יחסית | מתי משתלם |
+|---|---|---|
+| CIDR מרווח מתוכנן מראש | **0** | תמיד. הזול ביותר שקיים |
+| CIDR צר שדורש הרחבה בהמשך | לא ישירה, אבל **rework יקר** | אף פעם |
+| **IPv6 dual-stack** | חוסך את חיוב ה-IPv4 הציבורי | תעבורה שיכולה לעבור IPv6 |
+| Subnet פרטי + Gateway Endpoint | **0 עלות תעבורה** ל-S3/DynamoDB | תמיד עדיף על NAT לשירותים האלה |
+| Subnet פרטי + NAT Gateway | גבוהה — שעות + GB | כשצריך יציאה כללית לאינטרנט |
 
-VPC הוא גבול regional; subnet הוא AZ יחיד; routes מגדירים reachability ו-controls מגדירים authorization. Public דורש IGW route וכתובת ציבורית.
+### 🚩 עלויות נסתרות
 
-1. מה הופך subnet ל-public בפועל?
-2. מדוע לתכנן CIDR לא חופף?
-3. איזה רכיבים מייצרים את עיקר עלות ה-VPC?
+- **Public IPv4** — נקודה שהשתנתה. כל כתובת IPv4 ציבורית מחויבת לשעה. צי גדול של instances
+  עם IP ציבורי מיותר הוא דליפה שקטה. שימו אותם ב-private subnet.
+- **Elastic IPs יתומות** — EIP שהוקצתה ולא מחוברת ל-instance רץ מחויבת.
+- **Cross-AZ data transfer** — תעבורה בין subnets ב-AZs שונות מחויבת בשני הכיוונים.
+- **VPC Flow Logs מלאים** — לוגים של VPC עמוס יכולים להתפוצץ בנפח ב-CloudWatch Logs.
+- **ENIs יתומות** — נשארות אחרי מחיקת משאבים ומחזיקות כתובות.
+
+### 💡 טיפים לחיסכון
+
+- תכננו את ה-CIDR פעם אחת, בגדול. הרחבה בדיעבד היא הפרויקט היקר.
+- אל תיתנו IP ציבורי ל-instance שלא חייב אותו — private subnet + NAT/Endpoint.
+- שחררו Elastic IPs שלא בשימוש.
+- שמרו את התעבורה **בתוך אותה AZ** כשאפשר.
+- העדיפו **Gateway Endpoints** (חינם) על NAT ל-S3 ו-DynamoDB.
+- שלחו Flow Logs ל-**S3** במקום ל-CloudWatch Logs כשמדובר בארכיון ולא בהתראות.
+
+---
+
+## 5. ⚖️ השוואות מכריעות
+
+### Public Subnet מול Private Subnet
+
+| קריטריון | Public Subnet | Private Subnet |
+|---|---|---|
+| Route ל-`0.0.0.0/0` | → **Internet Gateway** | → NAT Gateway, או אין בכלל |
+| כתובת ציבורית למשאבים | כן (auto-assign או EIP) | לא |
+| כניסה יזומה מהאינטרנט | אפשרית (בכפוף ל-SG/NACL) | **בלתי אפשרית** |
+| יציאה לאינטרנט | ישירה | דרך NAT בלבד |
+| מה שמים שם | ALB, NAT Gateway, Bastion Host | EC2 של האפליקציה, RDS, ElastiCache |
+
+### רכיבי הרשת זה מול זה
+
+| קריטריון | VPC | Subnet | Route Table |
+|---|---|---|---|
+| Scope | Region | **AZ אחת** | VPC, משויכת ל-subnets |
+| מגדיר | מרחב כתובות כולל | תת-טווח + מיקום פיזי | לאן חבילה הולכת |
+| כמה | 5 ל-Region (soft) | הרבה | הרבה; אחת Main |
+| מוחק CIDR? | לא ניתן לשנות את הראשי | לא ניתן לשנות | ה-`local` לא נמחק |
+
+### CIDR של VPC — צר מול רחב
+
+| קריטריון | `/24` צר | `/16` רחב |
+|---|---|---|
+| כתובות | 256 | 65,536 |
+| עלות ישירה | זהה — **0** | זהה — **0** |
+| מקום לצמיחה | נגמר מהר | שנים קדימה |
+| סיכון לחפיפה | נמוך | גבוה יותר — צריך תכנון ארגוני |
+| המלצה | רק לסביבת בדיקה זמנית | **ברירת המחדל לפרודקשן** |
+
+> [!info] שורה תחתונה
+> **Route Table היא הסמכות היחידה על reachability.** SG ו-NACL רק מחליטים אם *מותר*,
+> אחרי שה-route כבר קבע שאפשר בכלל להגיע. אין route → אין תקשורת, ואף SG פתוח לא יעזור.
+
+---
+
+## 6. 🏛️ Well-Architected — ששת ה-Pillars
+
+| Pillar | מה זה אומר **ב-VPC** | פעולה קונקרטית |
+|---|---|---|
+| **Operational Excellence** | הרשת מתועדת וניתנת לשחזור | הגדרת VPC ב-IaC (CloudFormation/Terraform); tagging עקבי ל-subnets; Flow Logs לאבחון |
+| **Security** | private by default, אף שכבה לא חשופה יותר מהנדרש | DB ב-subnet פרטי בלי route לאינטרנט; אין auto-assign public IP; הפרדת שכבות ל-subnets נפרדים |
+| **Reliability** | כשל AZ שלם לא מפיל את המערכת | subnet מקביל בכל AZ; **לפחות 2 AZs**; לא תלות ברכיב zonal יחיד |
+| **Performance Efficiency** | פחות קפיצות, latency נמוך | שמירת תעבורה בתוך AZ; subnet sizing מספיק כדי לא להיתקע; Endpoints במקום מסלול דרך האינטרנט |
+| **Cost Optimization** | לא משלמים על כתובות ומסלולים מיותרים | ללא IPv4 ציבורי מיותר; שחרור EIPs; Gateway Endpoints לחינם; מזעור cross-AZ |
+| **Sustainability** | פחות עיבוד רשת מיותר | מסלול ישיר במקום דרך NAT; לא לשלוח תעבורה פנימית סיבוב דרך האינטרנט |
+
+---
+
+## 7. 🪤 מלכודות במבחן
+
+### מילות מפתח → תשובה
+
+| אם בשאלה כתוב... | כנראה מתכוונים ל... |
+|---|---|
+| "instance in a public subnet cannot reach the internet" | חסר **route ל-IGW** או חסר **public IP** |
+| "need 29 usable IPs" | לחשב **מינוס 5** → `/26`, לא `/27` |
+| "cannot launch instances, IPv6 enabled" | **אין IPv4 פנוי** ב-subnet → להוסיף CIDR |
+| "VPC must connect to on-premises later" | **CIDR שלא חופף** לרשת הארגונית |
+| "highly available architecture" | subnets **בשתי AZs לפחות** |
+| "database must not be reachable from the internet" | private subnet **בלי route ל-IGW** |
+| "outbound-only internet access over IPv6" | **Egress-Only Internet Gateway** |
+| "which route wins" | **Longest Prefix Match** |
+| "resources in the VPC can talk to each other" | ה-route המובנה **`local`** |
+
+### טעויות נפוצות
+
+> [!warning] מלכודת 1 — "public subnet" הוא הגדרה, לא תכונה
+> **הניסוח:** "We launched the instance in the public subnet but it has no internet access."
+> **הטעות:** להניח שהשם או ה-subnet לבדו מספיקים.
+> **הנכון:** צריך **שלושה** דברים ביחד: IGW מחובר, route `0.0.0.0/0 → igw`, ו-**כתובת ציבורית** למשאב.
+
+> [!warning] מלכודת 2 — לשכוח את 5 הכתובות השמורות
+> **הניסוח:** "You need 250 IP addresses. Is a /24 enough?"
+> **הטעות:** לענות "כן, /24 נותן 256".
+> **הנכון:** `/24` נותן **251 זמינות** — עדיין מספיק, אבל בקושי. ל-251+ צריך `/23`.
+> תמיד לחשב `2^(32−mask) − 5`.
+
+> [!warning] מלכודת 3 — Subnet רב-AZ
+> **הניסוח:** "Create one subnet spanning two Availability Zones for high availability."
+> **הטעות:** לבחור בזה כי זה נשמע פשוט.
+> **הנכון:** **Subnet לעולם לא חוצה AZ.** צריך subnet נפרד בכל AZ.
+
+> [!warning] מלכודת 4 — CIDR חופף
+> **הניסוח:** "Peer VPC-A (10.0.0.0/16) with VPC-B (10.0.0.0/16)."
+> **הטעות:** להניח שאפשר לפתור עם routes.
+> **הנכון:** **VPC Peering דורש CIDRs שאינם חופפים.** אין דרך לעקוף — צריך לבנות VPC מחדש.
+
+> [!warning] מלכודת 5 — SG במקום Route
+> **הניסוח:** "We opened all ports in the security group but the instance still can't reach the internet."
+> **הטעות:** לחפש עוד כללי SG.
+> **הנכון:** **SG לא יוצר route.** בלי `0.0.0.0/0` בטבלת הניתוב, החבילה אפילו לא יוצאת לדרך.
+
+> [!warning] מלכודת 6 — IGW שדי לחבר
+> **הניסוח:** "Attach an Internet Gateway to the VPC to give instances internet access."
+> **הטעות:** לבחור בזה כתשובה שלמה.
+> **הנכון:** נכון אבל **חלקי**. התשובה השלמה כוללת גם **עריכת ה-Route Table**.
+
+---
+
+## 8. 🏗️ Scenario מהעולם האמיתי
+
+**הדרישה:**
+
+לבנות VPC לפרודקשן לאפליקציית web תלת-שכבתית.
+דרישות: זמינות בשתי AZs, DB לא נגיש מהאינטרנט, מקום לצמיחה,
+ואפשרות עתידית להתחבר ל-Data Center הארגוני שיושב על `192.168.0.0/16`.
+
+**תכנון מרחב הכתובות:**
+
+```text
+VPC: 10.20.0.0/16      (65,536 כתובות — לא חופף ל-192.168.x של הארגון)
+
+  AZ  eu-west-1a                        AZ  eu-west-1b
+  ├── 10.20.0.0/24    Public   (251)    ├── 10.20.1.0/24    Public   (251)
+  ├── 10.20.10.0/23   App      (507)    ├── 10.20.12.0/23   App      (507)
+  └── 10.20.20.0/24   Data     (251)    └── 10.20.21.0/24   Data     (251)
+
+  10.20.128.0/17  ← שמור לצמיחה עתידית (חצי מה-VPC פנוי)
+```
+
+**הארכיטקטורה:**
+
+```text
+              Internet
+                 ↕
+          Internet Gateway
+                 ↕
+  ┌─── Public subnets (2 AZ) ────┐
+  │      ALB    +    NAT GW      │
+  └──────────────┬───────────────┘
+                 ↓
+  ┌─── App subnets (2 AZ, private) ───┐
+  │        EC2 in Auto Scaling Group  │
+  └──────────────┬────────────────────┘
+                 ↓
+  ┌─── Data subnets (2 AZ, private) ──┐
+  │        RDS Multi-AZ               │
+  └───────────────────────────────────┘
+```
+
+**הפתרון וההנמקה:**
+
+| החלטה | למה |
+|---|---|
+| **VPC `/16`** | עלות זהה ל-`/24`, אבל נותן מקום לעשור. אין סיבה לקמץ |
+| CIDR `10.20.x` ולא `192.168.x` | הארגון כבר תופס את `192.168.0.0/16` — חפיפה תמנע VPN/DX לתמיד |
+| **שלוש שכבות subnet** בכל AZ | הפרדה ברורה מאפשרת route table ו-NACL שונים לכל שכבה |
+| **שתי AZs** מלאות | כשל AZ אחת משאיר מערכת שלמה בשנייה |
+| App subnets ב-**`/23`** | 507 כתובות — ASG יכול לגדול בלי להיתקע |
+| **Route Table נפרדת לכל שכבה** | ל-public יש route ל-IGW; ל-app יש route ל-NAT; ל-data **אין route החוצה כלל** |
+| Data subnets **בלי route ל-`0.0.0.0/0`** | ה-DB פשוט **לא יכול** להגיע לאינטרנט ולא נגיש ממנו. הגנה מבנית, לא הגדרתית |
+| **`10.20.128.0/17` שמור** | מחצית ה-VPC פנויה ל-EKS, ל-Region נוסף, לשותפים |
+
+**למה לא לשים את ה-RDS ב-Public subnet עם SG סגור?**
+כי אז ההגנה נשענת על **הגדרה** אחת. אם מישהו יפתח את ה-SG בטעות — ה-DB חשוף מיד.
+ב-private subnet בלי route ל-IGW, גם SG פתוח לרווחה לא יחשוף אותו לאינטרנט. **הגנה בשכבות.**
+
+**למה לא `/24` ל-VPC?**
+כי 251 כתובות סה"כ, מחולקות לשש subnets, מגיעות ל-~40 כתובות לשכבה — וה-ASG נתקע בשיא הראשון.
+
+**מה עוד נדרש כדי שזה יעבוד?**
+NAT Gateway בכל AZ ליציאה מהשכבה הפרטית ([[10 - VPC Internet Connectivity]]),
+SG-to-SG בין השכבות ([[11 - VPC Security]]),
+ו-Gateway Endpoint ל-S3 כדי לא לשלם NAT על גיבויים ([[12 - VPC Private Connectivity]]).
+
+---
+
+## 9. 🚫 מה לא צריך לדעת למבחן
+
+- **חישוב binary ידני** של subnet masks. מספיק לזכור `2^(32−mask)` ואת האוקטטים.
+- **הפורמט המלא של כתובות IPv6** וכל כללי הקיצור. מספיק לזהות `::/0` ולהבין dual-stack.
+- **מגבלות quota מדויקות** על מספר subnets, route tables וכו' — soft limits שמשתנים.
+- **המבנה הפנימי של ה-VPC router** של AWS.
+- **תחביר CLI/API** ליצירת VPC.
+- **מה זה ClassicLink** — EC2-Classic הוא היסטוריה, רק מוזכר ברשימת הסיכום.
+- **Traffic Mirroring לעומק** — מספיק לדעת שהוא מעתיק תעבורה מ-ENI לניתוח.
+
+---
+
+## 10. ⚡ Cheat Sheet — סיכום מהיר
+
+- **VPC = Region. Subnet = AZ אחת.** subnet לעולם לא חוצה AZ.
+- **מספר כתובות = `2^(32 − mask)`.** `/24`=256 · `/26`=64 · `/28`=16.
+- **AWS שומרת 5 כתובות בכל subnet:** `.0` רשת, `.1` router, `.2` DNS, `.3` עתידי, אחרונה broadcast.
+- **צריך 29 IPs? `/27` (27 זמינות) לא מספיק — צריך `/26` (59 זמינות).**
+- **VPC CIDR:** מינימום `/28`, מקסימום `/16`, עד **5 CIDRs** ל-VPC, **5 VPCs** ל-Region (soft).
+- **רק טווחים פרטיים:** `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`.
+- **Default VPC** — `172.31.0.0/16`, מחובר לאינטרנט, כל instance מקבל IPv4 ציבורי.
+- **IGW: 1:1 עם VPC**, מנוהל, HA — **אבל חייבים גם route table**.
+- **Public subnet = IGW + route `0.0.0.0/0 → igw` + כתובת ציבורית.** שלושתם.
+- **`local` route** קיים תמיד ומאפשר תקשורת פנימית ב-VPC. לא ניתן למחיקה.
+- **Longest Prefix Match** קובע איזה route מנצח.
+- **CIDR לא חופף** — תנאי מוקדם ל-Peering, VPN ו-Direct Connect.
+- **כל כתובת IPv6 ב-AWS היא ציבורית.** IPv4 לא ניתן לכיבוי.
+- **לא מצליחים להשיק EC2?** אין **IPv4** פנוי — לא IPv6.
+- **`::/0`** הוא ה-`0.0.0.0/0` של IPv6; **Egress-Only IGW** הוא ה-NAT של IPv6.
+- **VPC, subnets, route tables, IGW, SG, NACL — חינם.** משלמים על NAT, endpoints, IPv4 ציבורי ו-data transfer.
+
+---
+
+## 11. ✅ בדיקת הבנה
+
+1. יש לכם subnet `10.0.1.0/26`. כמה instances תוכלו להשיק בו בפועל?
+2. צוות דורש subnet ל-100 שרתים. מהו ה-CIDR הקטן ביותר שיעבוד?
+3. השקתם EC2 ב-subnet שיש לו route ל-IGW, ועדיין אין אינטרנט. מה בודקים?
+4. חברה רוצה VPC על `192.168.0.0/16`, וה-Data Center שלה יושב על `192.168.0.0/16`. מה הבעיה?
+5. הפעלתם IPv6 ב-VPC ופתאום אי אפשר להשיק instances חדשים. למה?
+6. איזה route מנצח לתעבורה ל-`10.1.5.20`: `0.0.0.0/0 → igw` או `10.1.0.0/16 → pcx`?
+7. למה DB ב-private subnet בלי route ל-IGW בטוח יותר מ-DB ב-public subnet עם SG סגור?
+8. מהן שלוש הכתובות השמורות הראשונות ב-`10.0.5.0/24` ולמה כל אחת משמשת?
+
+<details>
+<summary>תשובות</summary>
+
+1. `/26` = 2^6 = **64** כתובות, פחות 5 שמורות = **59 instances**.
+2. `/25` נותן 128 − 5 = **123 זמינות** ✅. `/26` נותן רק 59 — לא מספיק. אז **`/25`**
+   (ובפועל רוב הצוותים ייקחו `/24` כדי להשאיר מרווח).
+3. שני דברים: (א) האם למשאב יש **IPv4 ציבורי או EIP** — בלעדיה אין כתובת חזרה.
+   (ב) האם ה-**Security Group** וה-**NACL** מאפשרים את התעבורה. ה-route הוא רק תנאי ראשון מתוך שלושה.
+4. **חפיפת CIDR.** לא ניתן יהיה להקים Site-to-Site VPN או Direct Connect בין השניים — הניתוב מעורפל.
+   חייבים לבחור טווח אחר ל-VPC, למשל `10.x`.
+5. הסיבה אינה IPv6 — מרחב ה-IPv6 עצום. **נגמרו כתובות ה-IPv4 הפנויות ב-subnet**,
+   ו-IPv4 לא ניתן לכיבוי. הפתרון: להוסיף CIDR IPv4 נוסף ו-subnet חדש.
+6. **`10.1.0.0/16 → pcx`** — לפי **Longest Prefix Match**, ה-route הספציפי יותר מנצח את `/0` הכללי.
+7. כי ההגנה **מבנית ולא הגדרתית**. ב-public subnet, טעות אנוש אחת ב-SG חושפת את ה-DB לאינטרנט מיד.
+   ב-private subnet בלי route ל-`0.0.0.0/0`, גם SG פתוח לרווחה לא מייצר מסלול מהאינטרנט. זו הגנה בשכבות.
+8. `10.0.5.0` — **Network Address**. `10.0.5.1` — **VPC Router**. `10.0.5.2` — **Amazon DNS**.
+   (ובנוסף `10.0.5.3` שמור לעתיד ו-`10.0.5.255` broadcast.)
+
+</details>
+
+---
+
+## 🔗 קישורים
+
+**שיעורים קשורים:** [[10 - VPC Internet Connectivity]] · [[11 - VPC Security]] · [[12 - VPC Private Connectivity]] · [[13 - VPC Network Architecture]] · [[05 - EC2 Fundamentals]] · [[08 - Elastic Load Balancing]] · [[14 - Route 53 and DNS]]
+
+**שקפי מקור:** `AWS_Certified_Solutions_Architect_Slides.md` — שורות 12721–13035, 14328–14524
