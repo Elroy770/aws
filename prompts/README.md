@@ -71,3 +71,16 @@ Do not silently turn a lesson request into an exam, or an exam request into a le
 | “Give me 10 hard S3 questions” | Follow `AWS questions.md` | `questions/` |
 | “Check my answers” | Grade the matching question set and record the review | `questions/` |
 | “Create a full mock exam” | Use the questions prompt, keeping the requested scope and format | `questions/` |
+
+
+כבר נוצרו הקבצים ועכשיו אני רוצה להוסיף לשיעור:
+
+- הרחבה יותר על כל נושא שיהיה ברור ולא מתומצת מידי 
+- על מה משלמים ומה יותר זול ומה יותר יקר (כמו השוואות בין מודלים של EC2 או S3 ארכיונים וכדומה) 
+- Framework של AWS לבחינת workload מול שישה pillars:
+	- Operational Excellence, 
+	- Security,
+	- Reliability, 
+	- Performance Efficiency, 
+	- Cost Optimization,
+	- Sustainability

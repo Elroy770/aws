@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "prompts/README.md",
+                "file": "lessons/38 - Serverless and Modern Architectures.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "38 - Serverless and Modern Architectures"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "prompts/README.md",
+                "file": "lessons/38 - Serverless and Modern Architectures.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for README"
+              "title": "Backlinks for 38 - Serverless and Modern Architectures"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "prompts/README.md",
+                "file": "lessons/38 - Serverless and Modern Architectures.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from README"
+              "title": "Outgoing links from 38 - Serverless and Modern Architectures"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "prompts/README.md",
+                "file": "lessons/38 - Serverless and Modern Architectures.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of README"
+              "title": "Outline of 38 - Serverless and Modern Architectures"
             }
           }
         ]
@@ -185,12 +185,33 @@
   },
   "active": "f892b9c660ba2545",
   "lastOpenFiles": [
-    "prompts/AWS questions.md",
-    "prompts/README.md",
-    "questions",
     "prompts/AWS teacher.md",
+    "prompts/README.md",
     "prompts/subjects.md",
-    "Welcome.md",
+    "lessons/01 - AWS Fundamentals.md",
+    "lessons/09 - VPC Fundamentals.md",
+    "lessons/41 - Final Review and Exam Strategy.md",
+    "lessons/40 - Integrated SAA Scenarios.md",
+    "lessons/10 - VPC Internet Connectivity.md",
+    "lessons/11 - VPC Security.md",
+    "lessons/35 - Backup and Data Protection.md",
+    "lessons/34 - Disaster Recovery.md",
+    "lessons/33 - High Availability and Scalability.md",
+    "lessons/23 - DynamoDB.md",
+    "lessons/39 - Architecture Decision Making.md",
+    "lessons/38 - Serverless and Modern Architectures.md",
+    "lessons/37 - Cost Optimization.md",
+    "lessons/32 - Security Services.md",
+    "lessons/31 - Monitoring and Logging.md",
+    "lessons/30 - Application Decoupling.md",
+    "lessons/29 - Event-Driven Architecture.md",
+    "lessons/02 - AWS Well-Architected Framework.md",
+    "lessons/14 - Route 53 and DNS.md",
+    "lessons/13 - VPC Network Architecture.md",
+    "lessons/12 - VPC Private Connectivity.md",
+    "lessons/08 - Elastic Load Balancing.md",
+    "lessons/03 - IAM Fundamentals.md",
+    "questions",
     "prompts",
     "lessons"
   ]
