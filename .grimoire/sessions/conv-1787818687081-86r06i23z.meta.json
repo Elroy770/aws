@@ -1,0 +1,144 @@
+{
+  "id": "conv-1787818687081-86r06i23z",
+  "providerId": "antigravity",
+  "title": "hi",
+  "titleGenerationStatus": "failed",
+  "createdAt": 1787818687081,
+  "updatedAt": 1787818746798,
+  "lastResponseAt": 1787818746798,
+  "sessionId": null,
+  "model": "antigravity",
+  "messages": [
+    {
+      "id": "msg-1787818687077-sgxhifd",
+      "role": "user",
+      "content": "hi\n\n<current_note>\nlessons/38 - Serverless and Modern Architectures.md\nDefault target: If the user asks to edit, rewrite, update, or apply instructions without naming another target file, use this note as the target file.\n</current_note>",
+      "displayContent": "hi",
+      "timestamp": 1787818687077,
+      "completedAt": 1787818687077,
+      "currentNote": "lessons/38 - Serverless and Modern Architectures.md"
+    },
+    {
+      "id": "msg-1787818687119-s84nyqx",
+      "role": "assistant",
+      "content": "",
+      "timestamp": 1787818687119,
+      "toolCalls": [],
+      "contentBlocks": [
+        {
+          "type": "text",
+          "content": "\n\n❌ **Error:** Antigravity Safe mode is unavailable because agy --print cannot request Grimoire file-edit approvals. Use Auto-approve only if you want AGY to edit files without prompts."
+        }
+      ],
+      "responseMetadata": {
+        "providerId": "antigravity",
+        "providerLabel": "Antigravity",
+        "model": "antigravity",
+        "modelLabel": "Antigravity",
+        "effort": "high",
+        "effortLabel": "High"
+      },
+      "completedAt": 1787818687124
+    },
+    {
+      "id": "msg-1787818699380-oo7ibbr",
+      "role": "user",
+      "content": "hi",
+      "displayContent": "hi",
+      "timestamp": 1787818699380,
+      "completedAt": 1787818699380
+    },
+    {
+      "id": "msg-1787818699383-ipbd40h",
+      "role": "assistant",
+      "content": "Hello! How can I help you today with [38 - Serverless and Modern Architectures.md](file:///C:/Users/Matanel-maman/Desktop/AWS/lessons/38%20-%20Serverless%20and%20Modern%20Architectures.md) or your AWS notes and projects?",
+      "timestamp": 1787818699383,
+      "toolCalls": [],
+      "contentBlocks": [
+        {
+          "type": "text",
+          "content": "Hello! How can I help you today with [38 - Serverless and Modern Architectures.md](file:///C:/Users/Matanel-maman/Desktop/AWS/lessons/38%20-%20Serverless%20and%20Modern%20Architectures.md) or your AWS notes and projects?"
+        }
+      ],
+      "responseMetadata": {
+        "providerId": "antigravity",
+        "providerLabel": "Antigravity",
+        "model": "antigravity",
+        "modelLabel": "Antigravity",
+        "effort": "high",
+        "effortLabel": "High"
+      },
+      "durationSeconds": 7,
+      "durationFlavorWord": "Stirred",
+      "completedAt": 1787818707362
+    },
+    {
+      "id": "msg-1787818738240-kny381u",
+      "role": "user",
+      "content": "קודם כל דבר עברית נשמה",
+      "displayContent": "קודם כל דבר עברית נשמה",
+      "timestamp": 1787818738240,
+      "completedAt": 1787818738240
+    },
+    {
+      "id": "msg-1787818738244-g4k78dj",
+      "role": "assistant",
+      "content": "בכיף ובאהבה! 😊\n\nאיך אני יכול לעזור לך היום עם הקובץ [38 - Serverless and Modern Architectures.md](file:///C:/Users/Matanel-maman/Desktop/AWS/lessons/38%20-%20Serverless%20and%20Modern%20Architectures.md) או עם כל נושא אחר ב-AWS?",
+      "timestamp": 1787818738244,
+      "toolCalls": [],
+      "contentBlocks": [
+        {
+          "type": "text",
+          "content": "בכיף ובאהבה! 😊\n\nאיך אני יכול לעזור לך היום עם הקובץ [38 - Serverless and Modern Architectures.md](file:///C:/Users/Matanel-maman/Desktop/AWS/lessons/38%20-%20Serverless%20and%20Modern%20Architectures.md) או עם כל נושא אחר ב-AWS?"
+        }
+      ],
+      "responseMetadata": {
+        "providerId": "antigravity",
+        "providerLabel": "Antigravity",
+        "model": "antigravity",
+        "modelLabel": "Antigravity",
+        "effort": "low",
+        "effortLabel": "Low"
+      },
+      "durationSeconds": 8,
+      "durationFlavorWord": "Cured",
+      "completedAt": 1787818746797
+    }
+  ],
+  "currentNote": "lessons/38 - Serverless and Modern Architectures.md",
+  "assistantResponseMetadata": [
+    {
+      "assistantMessageIndex": 0,
+      "metadata": {
+        "providerId": "antigravity",
+        "providerLabel": "Antigravity",
+        "model": "antigravity",
+        "modelLabel": "Antigravity",
+        "effort": "high",
+        "effortLabel": "High"
+      }
+    },
+    {
+      "assistantMessageIndex": 1,
+      "metadata": {
+        "providerId": "antigravity",
+        "providerLabel": "Antigravity",
+        "model": "antigravity",
+        "modelLabel": "Antigravity",
+        "effort": "high",
+        "effortLabel": "High"
+      }
+    },
+    {
+      "assistantMessageIndex": 2,
+      "metadata": {
+        "providerId": "antigravity",
+        "providerLabel": "Antigravity",
+        "model": "antigravity",
+        "modelLabel": "Antigravity",
+        "effort": "low",
+        "effortLabel": "Low"
+      }
+    }
+  ]
+}

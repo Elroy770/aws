@@ -1,0 +1,91 @@
+{
+  "id": "conv-1787817926238-u4koi9pde",
+  "providerId": "codex",
+  "title": "היי",
+  "titleGenerationStatus": "failed",
+  "createdAt": 1787817926238,
+  "updatedAt": 1787818649336,
+  "lastResponseAt": 1787818649336,
+  "sessionId": null,
+  "model": "gpt-5.5",
+  "messages": [
+    {
+      "id": "msg-1787817926230-5a3dzwa",
+      "role": "user",
+      "content": "היי",
+      "displayContent": "היי",
+      "timestamp": 1787817926230,
+      "completedAt": 1787817926230
+    },
+    {
+      "id": "msg-1787817926292-aiikjok",
+      "role": "assistant",
+      "content": "",
+      "timestamp": 1787817926292,
+      "toolCalls": [],
+      "contentBlocks": [],
+      "responseMetadata": {
+        "providerId": "codex",
+        "providerLabel": "Codex",
+        "model": "gpt-5.5",
+        "modelLabel": "GPT-5.5",
+        "effort": "high",
+        "effortLabel": "High"
+      }
+    },
+    {
+      "id": "msg-1787818649305-8brni8y",
+      "role": "user",
+      "content": "vhh",
+      "displayContent": "vhh",
+      "timestamp": 1787818649305,
+      "completedAt": 1787818649305
+    },
+    {
+      "id": "msg-1787818649311-fpzg1ro",
+      "role": "assistant",
+      "content": "",
+      "timestamp": 1787818649311,
+      "toolCalls": [],
+      "contentBlocks": [
+        {
+          "type": "text",
+          "content": "\n\n**Error:** Failed to start \"codex\": command not found. Set an absolute CLI path in the provider settings — desktop apps do not inherit the shell PATH."
+        }
+      ],
+      "responseMetadata": {
+        "providerId": "codex",
+        "providerLabel": "Codex",
+        "model": "antigravity:Gemini 3.6 Flash (Low)",
+        "modelLabel": "Antigravity:Gemini 3.6 Flash (Low)",
+        "effort": "medium",
+        "effortLabel": "Medium"
+      },
+      "completedAt": 1787818649335
+    }
+  ],
+  "assistantResponseMetadata": [
+    {
+      "assistantMessageIndex": 0,
+      "metadata": {
+        "providerId": "codex",
+        "providerLabel": "Codex",
+        "model": "gpt-5.5",
+        "modelLabel": "GPT-5.5",
+        "effort": "high",
+        "effortLabel": "High"
+      }
+    },
+    {
+      "assistantMessageIndex": 1,
+      "metadata": {
+        "providerId": "codex",
+        "providerLabel": "Codex",
+        "model": "antigravity:Gemini 3.6 Flash (Low)",
+        "modelLabel": "Antigravity:Gemini 3.6 Flash (Low)",
+        "effort": "medium",
+        "effortLabel": "Medium"
+      }
+    }
+  ]
+}
